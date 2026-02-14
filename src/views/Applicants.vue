@@ -42,16 +42,27 @@
         Total Order: {{ tshirtSizeTally.totalShirts }}
       </span>
 
-      <button @click="showScanner = true">
+      <!-- Qr Code Scanner -->
+      <button @click=openScanner class="btn btn-success mb-0 fw-bold">
         Scan User QR Code
       </button>
 
-      <div v-if="showScanner" class="scanner">
+      <div v-if="showScanner" class="modal-overlay-scanner">
+        <div class="modal-content-scanner">
+        <h3>Scan QR code</h3>
+
         <qrcode-stream
             :paused="paused"
             @init="onInit"
             @detect="QRDetect"
+            class="scanner-camera"
         />
+
+        <button @click="closeScanner" class="btn btn-success mb-0 fw-bold">
+          Close
+        </button>
+
+        </div>
       </div>
 
 
@@ -533,6 +544,7 @@ export default {
     }
   },
   methods: {
+    /*Initialize QR code scanner */
     async onInit(promise){
       try{
         await promise
@@ -542,6 +554,7 @@ export default {
       }
     },
 
+    /* Actions that will be preformed if a QR code is detected */
     async QRDetect(codes){
       try{
         let userId = codes[0].rawValue;
@@ -556,6 +569,7 @@ export default {
       }
     },
 
+    /* validate QR code data */
     async validateQR(userId){
       try{
         const response = await axios.post(
@@ -566,7 +580,14 @@ export default {
         if(response.data.valid){
           console.log("User validated", response.data.user);
 
+          const updatedUser = response.data.user;
+
+          const index = this.users.findIndex(u => u.id === updatedUser.id);
           alert("Check-in successful!");
+
+          // Update only the checkIn property
+          await this.toggleCheckIn(updatedUser);
+          this.users[index].checkIn = updatedUser.checkIn;
 
           this.paused = true;
         } else {
@@ -577,6 +598,18 @@ export default {
         console.error("Validation failed:", err);
         alert("Server error validating QR");
       }
+    },
+
+    /* Open the Scanner modal window */
+    openScanner(){
+      this.showScanner = true;
+      this.paused = false;
+    },
+
+    /* Closes the Scanner */
+    closeScanner(){
+      this.showScanner = false;
+      this.paused = true;
     },
     /**
      * Initializes the exportFields array based on the ALL_EXPORT_FIELDS constant.
@@ -700,8 +733,9 @@ export default {
         await axios.put(`${store.state.apiBaseUrl}/user/${userId}/checkin`, {
           checkIn: newCheckInStatus
         });
-        
-        this.$set(user, 'checkin', newCheckInStatus);
+
+        // Set the new check in status
+        user.checkIn = newCheckInStatus;
       }catch (err){
         console.error(`Error toggling check-in for user ${userId}:`, err);
       }
@@ -1079,9 +1113,35 @@ table tbody tr td.table-checkbox-center .form-check-input{
   flex-shrink: 0;
 }
 
-.scanner {
-  margin-top: 1rem;
-  position: relative;
+/* These are for the QR scanner */
+.modal-overlay-scanner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.6);
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  z-index: 9999;
 }
+
+.modal-content-scanner {
+  background: white;
+  padding: 20px;
+  border-radius: 10px;
+  width: 400px;
+  text-align: center;
+}
+
+.scanner-camera {
+  width: 100%;
+  height: 300px;
+}
+
+
 </style>
 
