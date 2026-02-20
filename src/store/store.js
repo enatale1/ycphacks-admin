@@ -8,6 +8,7 @@ export default createStore({
     state: {
         user: {},
         sponsors: [],
+        categories: [],
         activities: [],
         events: [],
         event: {},
@@ -43,6 +44,12 @@ export default createStore({
         },
         clearEvent(state) {
             state.event = null;
+        },
+        setCategories(state, categories) {
+            state.categories = categories;
+        },
+        updateCategories(state, index, newCategory) {
+            state.categories[index] = newCategory
         },
         setAuditLogs(state, auditLogs) {
             state.auditLogs = auditLogs;
@@ -310,7 +317,7 @@ export default createStore({
         },
         async getAuditLogs({ commit }, requestPayload = {}) {
             try {
-                const response = await fetch('http://localhost:3000/audit-logs/search', {
+                const response = await fetch(`${state.apiBaseUrl}/audit-logs/search`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestPayload),
@@ -331,13 +338,112 @@ export default createStore({
                     message: error.message || "Error fetching audit logs",
                 };
             }
-        }
+        },
+        async createCategory({ commit, state }, category) {
+            let response = null;
+
+            try {
+                if (!category || Object.keys(category).length === 0) {
+                    return { success: false, message: "Event is empty" };
+                }
+
+                response = await axios.post(`${state.apiBaseUrl}/category/create`,
+                    {
+                        categoryName: category.categoryName,
+                        eventId: category.eventId
+                    },
+                    {headers: { 'Content-Type': 'application/json' }}
+                );
+            } catch (error) {
+                return { success: false, message: error || "Network or server error while creating category" };
+            }
+
+            const data = response.data;
+
+            if (!response.status === 201) {
+                return { success: false, message: data.message || "Failed to create category", errors: data.errors };
+            }
+
+            commit("setCategories", [...state.categories, data.category]);
+            return { success: true, message: data.message || "Category created successfully" };
+
+        },
+        async updateCategory({ commit, state }, category) {
+            try {
+                if (!category || Object.keys(category).length === 0) {
+                    return { success: false, message: "Category is empty" };
+                }
+                const response = await fetch(`${state.apiBaseUrl}/category/update`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(category)
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    return { success: false, message: data.message || "Failed to update category", errors: data.errors };
+                }
+
+                commit("updateCategories", state.categories.findIndex(category), category)
+
+                return { success: true, message: data.message || "Category updated successfully" };
+
+            } catch (error) {
+                return { success: false, message: error.response?.data?.message || "Network or server error while updating category" };
+            }
+        },
+        async getCategoriesForEvent({commit, state}, eventId){
+            try{
+                const response = await axios.get(`${state.apiBaseUrl}/category/by-event/${eventId}`);
+                commit("setCategories", response.data.categories);
+
+                return {
+                    success: true,
+                    message: response.data.message
+                };
+            }catch(err){
+                console.error("Error fetching categories for event: ", err);
+                return {
+                    success: false,
+                    message: err.message || "Error fetching categories for event"
+                }
+            }
+        },
+        async deleteCategory({ commit, state }, id) {
+            try {
+                if (!id) {
+                    return { success: false, message: "Something went wrong" };
+                }
+
+                const response = await fetch(`${state.apiBaseUrl}/category/delete/${id}`, {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+
+                const data = await response.json();
+                if (!response.ok) {
+                    return { success: false, message: data.message || "Failed to delete event", errors: data.errors };
+                }
+
+                commit("setCategories",
+                    state.categories.filter(
+                        (category) => category.id !== id
+                ));
+
+                return { success: true, message: data.message || "Event deleted successfully" };
+
+            } catch (error) {
+                return { success: false, message: error.message || "Network or server error while deleting event" };
+            }
+        },
     },
     getters: {
         isAuthenticated: (state) => !!state.user,
         UserRole: (state) => state.user?.role || null,
         allSponsors: (state) => state.sponsors,
         getActivities: (state) => state.activities,
+        getCategories: (state) => state.categories,
         getEvents: (state) => state.events,
         getEvent: (state) => state.event,
         getAuditLogs: (state) => state.auditLogs

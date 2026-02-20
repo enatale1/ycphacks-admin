@@ -4,6 +4,7 @@ import Dashboard from '../views/Dashboard.vue';
 import Applicants from '../views/Applicants.vue';
 import Events from '../views/Events.vue';
 import Login from '../views/Login.vue';
+import Prizes from '../views/Prizes.vue';
 import Hardware from '@/views/Hardware.vue';
 import store from "@/store/store.js";
 import EventEdit from "@/views/EventEdit.vue";
@@ -16,6 +17,7 @@ const routes = [
     { path: '/', redirect: '/dashboard' },
     { path: '/dashboard', component: Dashboard },
     { path: '/applicants', component: Applicants },
+    { path: '/prizes', component: Prizes },
     { path: '/teams', component: TeamRegistration },
     { path: '/events', component: Events, name: 'Events' },
     { path: '/activities', component: Activities, name: 'Activities' },
