@@ -556,17 +556,20 @@ export default {
 
     /* Actions that will be preformed if a QR code is detected */
     async QRDetect(codes){
+      // Pause the scanner to process the QR code
+      this.paused = true
       try{
-        let userId = codes[0].rawValue;
-
-        // remove extra quotes
-        userId = JSON.parse(userId);
+        const rawData = codes[0].rawValue;
+        const cleanUserId = rawData.replace(/['"]+/g, '').trim();
 
         console.log("Detected:",codes)
-        await this.validateQR(userId);
+        await this.validateQR(cleanUserId);
       } catch (err){
-        alert("Invalid QR Code");
         console.error("QR parse error:", err);
+        alert("Invalid QR Code");
+      } finally {
+        // Resume scanning
+          this.paused = false;
       }
     },
 
@@ -580,10 +583,14 @@ export default {
 
         if(response.data.valid){
           console.log("User validated", response.data.user);
-
           const updatedUser = response.data.user;
-
           const index = this.users.findIndex(u => u.id === updatedUser.id);
+
+          if (index !== -1 && this.users[index].checkIn === true) {
+            alert("User is already checked in!");
+            return;
+          }
+
           alert("Check-in successful!");
 
           // Update only the checkIn property
