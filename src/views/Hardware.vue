@@ -99,6 +99,17 @@
             />
           </div>
 
+          <div class="form-group mt-2">
+            <label for="hardwareWhoHasId">ID of Individual</label>
+            <input
+                type="text"
+                id="hardwareSerial"
+                v-model="hardwareForm.whoHasId"
+                class="form-control"
+                placeholder="Add the User ID if returning then input none"
+            />
+          </div>
+
           <div class="form-group mt-3">
             <label>Functional</label>
             <div class="btn-group d-flex" role="group">
@@ -177,6 +188,7 @@ export default {
         serial: "",
         functional: true,
         description: "",
+        whoHasId: "",
         // We no longer store imageUrl here, as hardware can have multiple images.
         // The one used for preview is handled by a computed property.
       },
@@ -219,6 +231,7 @@ export default {
           serial: item.serial,
           functional: item.functional ?? true,
           description: item.description || "",
+          whoHasId: item.whoHasId || "",
           // Access the images array returned by the repository's 'include'
           images: item.images || [],
         }));
@@ -245,6 +258,7 @@ export default {
         serial: hardware.serial,
         functional: hardware.functional,
         description: hardware.description,
+        whoHasId: hardware.whoHasId,
       };
 
       // Set the existing image URL for preview
@@ -305,6 +319,9 @@ export default {
           serial: this.hardwareForm.serial,
           functional: this.hardwareForm.functional,
           description: this.hardwareForm.description,
+          whoHasId:
+              this.hardwareForm.whoHasId === "" ||
+              this.hardwareForm.whoHasId.toLowerCase() === "none" ? null : Number(this.hardwareForm.whoHasId),
         };
 
         let hardwareResponse;
@@ -371,6 +388,7 @@ export default {
         serial: "",
         functional: true,
         description: "",
+        whoHasId: ""
       };
       this.selectedFile = null;
       this.currentPrimaryImageUrl = null;
