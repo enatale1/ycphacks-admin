@@ -55,6 +55,9 @@ export default createStore({
         setPrizes(state, prizes) {
             state.prizes = prizes;
         },
+        updatePrizes(state, index, newPrize) {
+            state.prizes[index] = newPrize
+        },
         setAuditLogs(state, auditLogs) {
             state.auditLogs = auditLogs;
         },
@@ -375,23 +378,18 @@ export default createStore({
 
         },
         async updateCategory({ commit, state }, category) {
+
+            if (!category || Object.keys(category).length === 0) {
+                return { success: false, message: "Category is empty" };
+            }
+
             try {
-                if (!category || Object.keys(category).length === 0) {
-                    return { success: false, message: "Category is empty" };
-                }
-                const response = await axios.post(`${state.apiBaseUrl}/category/update`,
+                const response = await axios.put(`${state.apiBaseUrl}/category/update`,
                     category,
                     { headers: {'Content-Type': 'application/json'} }
                 );
 
-                const data = await response.json();
-                if (!response.ok) {
-                    return { success: false, message: data.message || "Failed to update category", errors: data.errors };
-                }
-
-                commit("updateCategories", state.categories.findIndex(category), category)
-
-                return { success: true, message: data.message || "Category updated successfully" };
+                return { success: true, updatedCategory: response.updatedCategory, message: data.message || "Category updated successfully" };
 
             } catch (error) {
                 return { success: false, message: error.response?.data?.message || "Network or server error while updating category" };
@@ -486,14 +484,8 @@ export default createStore({
                     { headers: {'Content-Type': 'application/json' } }
                 );
 
-                const data = await response.json();
-                if (!response.ok) {
-                    return { success: false, message: data.message || "Failed to update category", errors: data.errors };
-                }
-
-                commit("updatePrizes", state.prizes.findIndex(p => p.id === prize.id), prize)
-
-                return { success: true, message: data.message || "Category updated successfully" };
+                const data = await response.data;
+                return { success: true, message: data.message || "Prize updated successfully" };
 
             } catch (error) {
                 return { success: false, message: error.message || "Network or server error while updating category" };

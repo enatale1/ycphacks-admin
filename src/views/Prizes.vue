@@ -1,6 +1,6 @@
 <template>
   <div class="container mt-5">
-    <h2 class="mb-4 text-center">Categories</h2>
+    <h2 class="mb-4 text-center">Prizes & Categories</h2>
 
     <div class="d-flex justify-content-end gap-2 mb-3">
       <!-- Add Category Button -->
@@ -22,8 +22,7 @@
 
     <!-- Add Category Form -->
     <!-- This really only has the name, but will eventually have the subcategories -->
-    <!-- Considering making the prizes be added directly within the category form -->
-    <div v-if="showAddCategoryForm" class="popup-overlay">
+    <div v-if="showAddCategoryForm && isOscar" class="popup-overlay">
       <div class="card p-3 popup">
         <h5>Add Category</h5>
         <form @submit.prevent="handleAddCategory">
@@ -54,10 +53,10 @@
           </div>
           <p class="alert alert-warning">
             <strong>⚠️ Are you absolutely sure?</strong> 
-            This will permanently delete the tier and cannot be undone.
+            This will permanently delete the category and cannot be undone.
           </p>
           
-          <p>Please confirm the name of the tier you wish to delete:</p>
+          <p>Please confirm the name of the category you wish to delete:</p>
           <div class="mb-2">
             <label class="form-label">Name</label>
             <input v-model="currentRemoveCategory_Name" type="text" class="form-control" />
@@ -78,7 +77,7 @@
     <div v-if="showEditCategoryForm && isOscar" class="popup-overlay">
       <div class="card p-3 popup" :key="currentEditCategory_Id">
         <h5>Edit Category</h5>
-        <form @submit.prevent="handleUpdateCategory">
+        <form @submit.prevent="handleEditCategory">
           <div v-if="editCategoryFormError" class="alert alert-danger p-2 mb-3" role="alert">
             <i class="bi bi-exclamation-triangle-fill"></i> {{ editCategoryFormError }}
           </div>
@@ -98,9 +97,9 @@
 
 
     <!-- Add Prize Form -->
-    <div v-if="showAddPrizeForm" class="popup-overlay">
+    <div v-if="showAddPrizeForm && isOscar" class="popup-overlay">
       <div class="card p-3 popup">
-        <h5>Add Category</h5>
+        <h5>Add Prize</h5>
         <form @submit.prevent="handleAddPrize">
           <div v-if="addPrizeFormError" class="alert alert-danger p-2 mb-3" role="alert">
             <i class="bi bi-exclamation-triangle-fill"></i> {{ addPrizeFormError }}
@@ -110,7 +109,7 @@
             <input v-model="currentAddPrize_Name" type="text" class="form-control" required/>
 
             <label class="form-label">Placement</label>
-            <input v-model="currentAddPrize_Placement" type="number" class="form-control" required/>
+            <input v-model="currentAddPrize_Placement" type="number" min=1 class="form-control" required/>
 
             <label class="form-label">Handed Out</label>
             <input v-model="currentAddPrize_HandedOut" type="checkbox" class=""/>
@@ -125,10 +124,38 @@
       </div>
     </div>
 
+    <!-- Edit Prize Form -->
+    <div v-if="showEditPrizeForm && isOscar" class="popup-overlay">
+      <div class="card p-3 popup">
+        <h5>Edit Prize</h5>
+        <form @submit.prevent="handleEditPrize">
+          <div v-if="editPrizeFormError" class="alert alert-danger p-2 mb-3" role="alert">
+            <i class="bi bi-exclamation-triangle-fill"></i> {{ editPrizeFormError }}
+          </div>
+          <div class="mb-2">
+            <label class="form-label">Name</label>
+            <input v-model="currentEditPrize_Name" type="text" class="form-control" required/>
+
+            <label class="form-label">Placement</label>
+            <input v-model="currentEditPrize_Placement" type="number" min=1 class="form-control" required/>
+
+            <label class="form-label">Handed Out</label>
+            <input v-model="currentEditPrize_HandedOut" type="checkbox" class=""/>
+          </div>
+          <div class="d-flex justify-content-end gap-2 mt-3">
+            <button type="button" class="btn btn-secondary" @click="cancelEditPrize">
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-success">Submit</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <!-- Remove Prize Form -->
     <div v-if="showRemovePrizeForm && isOscar" class="popup-overlay">
       <div class="card p-3 popup">
-        <h5>Remove Category</h5>
+        <h5>Remove Prize</h5>
         <form @submit.prevent="handleRemovePrize">
           <div v-if="removePrizeFormError" class="alert alert-danger p-2 mb-3" role="alert">
             <i class="bi bi-exclamation-triangle-fill"></i> {{ removePrizeFormError }}
@@ -138,10 +165,17 @@
             This will permanently delete the prize and cannot be undone.
           </p>
 
-          <p>Please confirm the name of the prize you wish to delete in {{}}:</p>
+          <p>
+            Please confirm the name and/or placement of the prize you wish to delete in the
+            {{categories.find(c => c.categoryId === currentRemovePrize_CategoryId.value).categoryName}} category:
+          </p>
+
           <div class="mb-2">
             <label class="form-label">Name</label>
-            <input v-model="currentRemovePrize_Name" type="text" class="form-control" />
+            <input v-model="currentRemovePrize_Name" type="text" class="form-control"/>
+
+            <label class="form-label">Placement</label>
+            <input v-model="currentRemovePrize_Placement" type="number" min=1 class="form-control"/>
           </div>
 
           <button type="button" class="btn btn-secondary" @click="cancelRemovePrize">
@@ -165,7 +199,7 @@
       <div class="container">
         <div class="row justify-content-between">
 
-          <h4 class="col">{{categoryData.categoryName}}</h4>
+          <h4 class="col" @click="toggleEditCategoryForm(categoryData.id)">{{categoryData.categoryName}}</h4>
 
           <div v-if="isOscar" class="col text-end">
             <button class="btn btn-primary me-2" @click="openAddPrizeForm(categoryData.id)">
@@ -197,7 +231,8 @@
               <tr
                   v-for="prize in prizes
                       .filter(p => p.categoryId === categoryData.id)
-                      .sort((p1, p2) => p1.placement - p2.placement)">
+                      .sort((p1, p2) => p1.placement - p2.placement)"
+                  @click="openEditPrizeForm(prize.id)">
 
                 <td class=text-center>{{prize.placement}}</td>
                 <td class=text-center>{{prize.prizeName}}</td>
@@ -262,8 +297,9 @@ const editPrizeFormError = ref(null);
 
 const currentRemovePrize_Id = ref(null);
 const currentRemovePrize_EventId = ref(null);
-const currentRemovePrize_Name = ref("");
 const currentRemovePrize_CategoryId = ref(null);
+const currentRemovePrize_Name = ref("");
+const currentRemovePrize_Placement = ref(null);
 const removePrizeFormError = ref(null);
 
 // Validate Characters
@@ -305,17 +341,49 @@ const isCategoryDeleteButtonDisabled = computed(() => {
 
 const isPrizeDeleteButtonDisabled = computed(() => {
   const enteredName = currentRemovePrize_Name.value.trim();
+  const enteredPlacement = Number(currentRemovePrize_Placement.value);
 
-  // Checks if it's blank -> should be grayed out
-  if(enteredName === '') return true;
+  const enteredNameIsEmpty = enteredName === '';
+  const enteredPlacementIsEmpty = enteredPlacement === 0;
 
+  // both are empty
+  if (enteredNameIsEmpty && enteredPlacementIsEmpty) return true;
+
+  // both are populated
+  if (!enteredNameIsEmpty && !enteredPlacementIsEmpty) {
+    const prizeExists = prizes.value
+        .filter(p => p.categoryId === currentRemovePrize_CategoryId.value)
+        .some(prize => {
+
+          // Checks if the placement exists
+          return prize.placement === enteredPlacement &&
+              prize.prizeName.toLowerCase() === enteredName.toLocaleLowerCase();
+        });
+
+    return !prizeExists;
+  }
+
+  // only name is populated
+  if (!enteredNameIsEmpty) {
+    const prizeExists = prizes.value
+        .filter(p => p.categoryId === currentRemovePrize_CategoryId.value)
+        .some(prize => {
+
+          // Checks if the name exists
+          return prize.prizeName.toLowerCase() === enteredName.toLocaleLowerCase();
+        });
+
+    return !prizeExists;
+  }
+
+  // only placement is populated
   const prizeExists = prizes.value
       .filter(p => p.categoryId === currentRemovePrize_CategoryId.value)
       .some(prize => {
 
         // Checks if the name exists
-        return prize.prizeName.toLowerCase() === enteredName.toLocaleLowerCase();
-  });
+        return prize.placement === enteredPlacement;
+      });
 
   return !prizeExists;
 });
@@ -425,6 +493,13 @@ const toggleAddCategoryForm = async () => {
   addCategoryFormError.value = null;
 };
 
+const toggleEditCategoryForm = async (categoryId) => {
+  showEditCategoryForm.value = !showEditCategoryForm.value;
+  currentEditCategory_Id.value = categoryId;
+  currentEditCategory_Name.value = '';
+  editCategoryFormError.value = null;
+};
+
 const toggleRemoveCategoryForm = () => {
   showRemoveCategoryForm.value = !showRemoveCategoryForm.value;
   removeCategoryFormError.value = null;
@@ -460,20 +535,25 @@ const openAddPrizeForm = (categoryId) => {
   addPrizeFormError.value = null;
 }
 
+const openEditPrizeForm = (prizeId) => {
+  const prizeFromId = prizes.value.find(p => p.id === prizeId);
+
+  console.log(prizeId);
+
+  showEditPrizeForm.value = true;
+  currentEditPrize_Id.value = prizeId;
+  currentEditPrize_Name.value = prizeFromId.prizeName;
+  currentEditPrize_CategoryId.value = prizeFromId.categoryId;
+  currentEditPrize_Placement.value = prizeFromId.placement;
+  currentEditPrize_HandedOut.value = prizeFromId.handedOut;
+  addPrizeFormError.value = null;
+}
+
 const openRemovePrizeForm = (categoryId) => {
   showRemovePrizeForm.value = true;
   currentRemovePrize_Name.value = "";
   currentRemovePrize_CategoryId.value = categoryId;
   removePrizeFormError.value = null;
-}
-
-const closeAddPrizeForm = () => {
-  showAddPrizeForm.value = false;
-  currentAddPrize_Name.value = "";
-  currentAddPrize_CategoryId.value = null;
-  currentAddPrize_Placement.value = null;
-  currentAddPrize_HandedOut.value = false;
-  addPrizeFormError.value = null;
 }
 
 
@@ -491,7 +571,6 @@ const cancelEditPrize = () => {
   showEditPrizeForm.value = false;
   currentEditPrize_Id.value = null;
   currentEditPrize_Name.value = "";
-  currentEditPrize_CategoryId.value = null;
   currentEditPrize_Placement.value = null;
   currentEditPrize_HandedOut.value = null;
   editPrizeFormError.value = null;
@@ -508,11 +587,6 @@ const cancelRemovePrize = () => {
 
 const handleAddCategory = async () => {
   addCategoryFormError.value = null;
-
-  if(currentAddCategory_Name.value === null){
-    addCategoryFormError.value = "Name must not be null.";
-    return;
-  }
 
   try{
     const category = await store.dispatch('createCategory', {
@@ -532,11 +606,6 @@ const handleAddCategory = async () => {
 
 const handleAddPrize = async () => {
   addPrizeFormError.value = null;
-
-  if(currentAddPrize_Name.value === null){
-    addCategoryFormError.value = "Name must not be null.";
-    return;
-  }
 
   try{
     const prize = await store.dispatch('createPrize', {
@@ -558,28 +627,44 @@ const handleAddPrize = async () => {
 }
 
 
-const handleUpdateCategory = async () => {
+const handleEditCategory = async (categoryId) => {
     editCategoryFormError.value = null;
-
-    const editCategoryName = Number(currentEditCategory_Name);
-
-    if(!editCategoryName.value){
-      editCategoryFormError.value = "All fields must be valid. Category Name cannot be empty.";
-      return;
-    }
 
     try{
       await store.dispatch('updateCategory', {
-        categoryName: editCategoryName.value,
-        eventId: currentEventId.value
+        id: currentEditCategory_Id.value,
+        categoryName: currentEditCategory_Name.value,
+        eventId: currentEventId.value,
       });
 
-      const resCategories = await store.getters.getCategories;
-      categories.value = resCategories === null ? [] : resCategories;
+      await fetchCategories();
 
       showEditCategoryForm.value = false;
   }catch (err){
-      editCategoryFormError.value = err || "Failed to update sponsor tier.";
+      editCategoryFormError.value = err || "Failed to update category.";
+  }
+}
+
+const handleEditPrize = async () => {
+  editPrizeFormError.value = null;
+
+  try{
+    console.log("Category ID: " + currentEditPrize_CategoryId.value)
+
+    await store.dispatch('updatePrize', {
+      id: currentEditPrize_Id.value,
+      eventId: currentEventId.value,
+      prizeName: currentEditPrize_Name.value,
+      categoryId: currentEditPrize_CategoryId.value,
+      placement: currentEditPrize_Placement.value,
+      handedOut: currentEditPrize_HandedOut.value
+    });
+
+    await fetchPrizes();
+
+    showEditPrizeForm.value = false;
+  }catch (err){
+    editPrizeFormError.value = err || "Failed to update prize.";
   }
 }
 
@@ -621,13 +706,28 @@ const handleRemoveCategory = async () => {
 const handleRemovePrize = async () => {
   removePrizeFormError.value = null;
 
-  const prizeToRemove = prizes.value
-      .filter(p => p.categoryId === currentRemovePrize_CategoryId.value)
-      .find(s => s.prizeName.toLocaleLowerCase() === currentRemovePrize_Name.value.toLocaleLowerCase());
+  const prizesInCategory = prizes.value.filter(
+      p => p.categoryId === currentRemovePrize_CategoryId.value)
 
-  if(!prizeToRemove || !prizeToRemove.id){
-    removePrizeFormError.value = `Prize named "${currentRemovePrize_Name.value}" was not found. Please check the spelling.`;
-    return;
+  let prizeToRemove = null;
+
+  const enteredNameIsEmpty = currentRemovePrize_Name.value === '';
+  const enteredPlacementIsEmpty = currentRemovePrize_Placement.value === '';
+
+  // both name and placement are populated
+  if (!enteredNameIsEmpty && !enteredPlacementIsEmpty) {
+    prizeToRemove = prizes.value.find(s => s.placement === Number(currentRemovePrize_Placement.value) &&
+        s.prizeName.toLocaleLowerCase() === currentRemovePrize_Name.value.toLocaleLowerCase());
+  }
+
+  // only name is populated
+  else if (!enteredNameIsEmpty) {
+    prizeToRemove = prizes.value.find(s => s.prizeName.toLocaleLowerCase() === currentRemovePrize_Name.value.toLocaleLowerCase());
+  }
+
+  // only placement is populated
+  else {
+    prizeToRemove = prizes.value.find(s => s.placement === Number(currentRemovePrize_Placement.value));
   }
 
   try {
