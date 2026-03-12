@@ -28,6 +28,11 @@
         </div>
 
         <button type="submit" class="login-button">Sign in</button>
+
+        <p class="footer-text" style="margin-top: 15px;">
+          <a href="http://localhost:8080/passwordLink">Forgot Password?</a>
+        </p>
+
       </form>
     </div>
   </div>
