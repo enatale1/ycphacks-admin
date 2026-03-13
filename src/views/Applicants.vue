@@ -470,7 +470,7 @@ export default {
   },
   computed: {
     activeEventId(){
-      return this.$store.state.activeEvent;
+      return this.$store.state.event?.id;
     },
     isOscar(){
       return this.$store.getters.UserRole === 'oscar';

@@ -154,7 +154,7 @@ export default {
   computed: {
     ...mapGetters(['getActivities']),
     activeEventId(){
-      return this.$store.state.activeEvent;
+      return this.$store.state.event?.id;
     },
     checkedInCount(){
       return this.users.filter(user => user.checkIn && user.role.toLowerCase() !== 'staff' && user.role.toLowerCase() !== 'oscar').length;

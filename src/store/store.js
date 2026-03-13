@@ -92,15 +92,16 @@ export default createStore({
         },
         async validateWithToken({commit, state}) {
             try {
-                const token = {
-                    token: document.cookie.split('; ').find(row => row.startsWith('token=')).split('=')[1]
-                }
+                const token = document.cookie.split('; ').find(row => row.startsWith('token='));
 
                 if (!token) return { success: false, message: "No token found"};
 
-                const response = await axios.post(`${state.apiBaseUrl}/user/auth`, {token}, {
+                const tokenString = token.split('=')[1];
+
+                const response = await axios.post(`${state.apiBaseUrl}/user/auth`, {}, {
                     headers: {
                         "Content-Type": "application/json",
+                        "Authorization": `Bearer ${tokenString}`
                     },
                 });
 
