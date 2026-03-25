@@ -347,7 +347,7 @@ export default{
     },
     computed:{
         activeEventId() {
-            return this.$store.state.activeEvent;
+            return this.$store.getters.getEvent.id;
         },
         isOscar(){
             return this.$store.getters.UserRole === 'oscar';
@@ -553,7 +553,8 @@ export default{
         },
         async downloadTeamsPDF() {
           try {
-            const response = await axios.get(`${API_BASE_URL}/puppeteer/teamPDF/${this.eventId}`,{
+            const eventId = this.activeEventId;
+            const response = await axios.get(`${API_BASE_URL}/puppeteer/teamPDF/${eventId}`,{
               responseType: 'blob',
             });
 
