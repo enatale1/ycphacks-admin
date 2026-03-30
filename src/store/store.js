@@ -502,7 +502,7 @@ export default createStore({
         },
         async getPrizesForEvent({commit, state}, eventId){
             try{
-                const response = await axios.get(`${state.apiBaseUrl}/prize/by-event/${eventId.value}`);
+                const response = await axios.get(`${state.apiBaseUrl}/prize/by-event/${eventId}`);
 
                 const data = await response.data;
                 commit("setPrizes", data.prizes);

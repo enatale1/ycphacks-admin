@@ -28,7 +28,7 @@
         <p>Listed Events</p>
       </div>
       <div class="metric-box listed-prizes">
-        <h3>30</h3>
+        <h3>{{prizeCount}}</h3>
         <p>Listed Prizes</p>
       </div>
       <div class="metric-box listed-projects">
@@ -147,17 +147,19 @@ export default {
     };
   },
   async mounted() {
-    await this.$store.dispatch('getActiveEvent'); 
-    this.fetchUsers();
-    this.fetchActivities();
+    await this.$store.dispatch('getActiveEvent');
+    console.log(store.getters.getEvent?.id);
+    await this.$store.dispatch('getPrizesForEvent', store.getters.getEvent?.id);
+    await this.fetchUsers();
+    await this.fetchActivities();
   },
   computed: {
     ...mapGetters(['getActivities']),
     activeEventId(){
-      return this.$store.state.event?.id;
+      return store.getters.getEvent?.id;
     },
     checkedInCount(){
-      return this.users.filter(user => user.checkIn && user.role.toLowerCase() !== 'staff' && user.role.toLowerCase() !== 'oscar').length;
+      return this.users.filter(user => user.checkIn && user.role.toLowerCase() === 'participant').length;
     },
     registeredParticipantCount(){
       return this.users.filter(user =>
@@ -190,6 +192,10 @@ export default {
       return this.showAllActivities
           ? this.sortedActivities.slice(0, 6) // show first 6
           : this.sortedActivities.slice(0, 3); // show first 3
+    },
+    prizeCount() {
+      console.log(store.getters.getPrizes);
+      return store.getters.getPrizes.length;
     }
   },
   methods: {
@@ -225,6 +231,25 @@ export default {
         console.error('Failed to fetch activities:', error);
       } finally {
         this.isLoading = false;
+      }
+    },
+    async fetchPrizes() {
+      try {
+        const activeEvent = await store.dispatch('getActiveEvent');
+        let eventId = null;
+
+
+        // Only fetch prizes if an event exists
+        if (activeEvent.success) {
+          eventId = store.getters.getEvent.id;
+        } else {
+          console.warn('No active event found');
+          return;
+        }
+
+        await store.dispatch('getPrizesForEvent', eventId);
+      } catch (err) {
+        console.error("Error fetching categories: ", err);
       }
     },
     calculateTally(userList) {

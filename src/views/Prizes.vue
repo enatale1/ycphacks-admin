@@ -382,7 +382,7 @@ const fetchPrizes = async () => {
       currentEventId.value = eventId;
     }
 
-    const getEventPrizesSuccess = await store.dispatch('getPrizesForEvent', currentEventId);
+    const getEventPrizesSuccess = await store.dispatch('getPrizesForEvent', currentEventId.value);
 
     if (!getEventPrizesSuccess.success) {
       console.warn("Could not get prizes from event ID.");
