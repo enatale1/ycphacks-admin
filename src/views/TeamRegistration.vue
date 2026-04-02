@@ -347,7 +347,7 @@ export default{
     },
     computed:{
         activeEventId() {
-            return this.$store.state.activeEvent;
+          return this.$store.state.event?.id;
         },
         isOscar(){
             return this.$store.getters.UserRole === 'oscar';
@@ -406,7 +406,7 @@ export default{
     },
     methods: {
         async fetchTeams() {
-            const eventId = this.activeEventId; 
+            const eventId = this.activeEventId;
             try {
                 // 2. Use the new endpoint and append eventId as a query parameter                
                 const response = await axios.get(`${API_BASE_URL}/teams/all?eventId=${eventId}`);
@@ -553,7 +553,8 @@ export default{
         },
         async downloadTeamsPDF() {
           try {
-            const response = await axios.get(`${API_BASE_URL}/puppeteer/teamPDF/${this.eventId}`,{
+            const eventId = this.activeEventId;
+            const response = await axios.get(`${API_BASE_URL}/puppeteer/teamPDF/${eventId}`,{
               responseType: 'blob',
             });
 
