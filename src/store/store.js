@@ -520,6 +520,25 @@ export default createStore({
                 return { success: false, message: error.message || "Network or server error while importing CSV file" };
             }
             return {success: true, message: "CSV was properly imported"};
+        },
+
+        async importCSVHardware({ state }, file) {
+            console.log(file);
+            try {
+                if(!file)
+                    return { success: false, message: "Missing CSV File" };
+                const csvText = await file.text();
+                console.log(csvText);
+                const response = await axios.post(`${state.apiBaseUrl}/hardware/import`, csvText, {headers: {'Content-type':'text/csv'}});
+
+                const data = response.data;
+                if (!data) {
+                    return { success: false, message: data.message || "Failed to import CSV file", errors: data.errors };
+                }
+            } catch(error) {
+                return { success: false, message: error.message || "Network or server error while importing CSV file" };
+            }
+            return {success: true, message: "CSV was properly imported"};
         }
     },
     getters: {

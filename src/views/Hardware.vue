@@ -1,6 +1,6 @@
 <template>
   <div class="container mt-5">
-    <button v-if="isOscar" @click="showImportCSVActivityModal = true" class="btn btn-primary add-hardware-btn">Import CSV File</button>
+    <button v-if="isOscar" @click="showImportCSVHardwareModal = true" class="btn btn-primary add-hardware-btn">Import CSV File</button>
 
     <button @click="openAddModal" class="btn btn-primary add-hardware-btn">
       Add Hardware
@@ -163,6 +163,14 @@
           </div>
 
         </form>
+      </div>
+    </div>
+
+    <div v-if="showImportCSVHardwareModal" class="modal-overlay">
+      <div class="modal-content">
+        <input type="file" @change="handleFileUpload" accept=".csv" />
+        <button @click="uploadHardwareFile">Upload</button>
+        <button type="button" class="btn btn-secondary" @click="showImportCSVHardwareModal = false; resetForm()">Cancel</button>
       </div>
     </div>
 
@@ -399,6 +407,25 @@ export default {
       this.selectedFile = null;
       this.currentPrimaryImageUrl = null;
     },
+
+    handleFileUpload(e) {
+      this.file = e.target.files[0];
+    },
+    async uploadHardwareFile() {
+      this.loading = true;
+
+      const result = await store.dispatch("importCSVHardware", this.file);
+
+      if (result.success) {
+        await this.fetchHardwareList(); // Refresh hardware list
+        this.showImportCSVHardwareModal = false; // Close modal
+        this.resetForm();
+      } else {
+        this.message = result.message;
+      }
+
+      this.loading = false;
+    }
   },
 };
 </script>
